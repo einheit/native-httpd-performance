@@ -1,4 +1,4 @@
 #!/bin/sh
 
-exec ruby server.rb
+exec ruby ./server.rb
 

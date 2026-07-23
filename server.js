@@ -1,7 +1,6 @@
-Bun.serve({
-  port: 8080,
-  fetch(req) {
-    return new Response("Hello World");
-  },
-});
+const http = require('http');
+
+http.createServer((req, res) => {
+  res.end('Hello from Node.js');
+}).listen(8080);
 

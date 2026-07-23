@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec node httpd.js
+exec node server.js

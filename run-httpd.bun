@@ -1,4 +1,4 @@
 #!/bin/sh
 
-exec bun run server.js
+exec bun run server.bun
 
