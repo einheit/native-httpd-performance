@@ -15,4 +15,4 @@ The test.sh script runs each launch script, which compiles, if neccesary, and ru
 
 When all the tests are run, the test script displays the sorted performance of the implementations.
 
-
+<img src="assets/screenshot.png" alt="App Screenshot" width="500">
