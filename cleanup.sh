@@ -1,2 +1,2 @@
 /bin/rm -rf tmp
-/bin/rm server_*
+/bin/rm -f server_*
