@@ -1,0 +1,108 @@
+#!/bin/sh
+N=8192
+TMP_DIR="tmp"
+
+# Ensure clean directory structure
+[ -d "$TMP_DIR" ] || mkdir "$TMP_DIR"
+rm -f "$TMP_DIR"/*
+
+# 1. Determine the best available health-check command
+if command -v curl >/dev/null 2>&1; then
+    CHECK_CMD="curl -s --connect-timeout 1 http://localhost:8080/"
+elif command -v wget >/dev/null 2>&1; then
+    CHECK_CMD="wget -q --spider -T 1 http://localhost:8080/"
+else
+    echo "Error: Neither curl nor wget is installed."
+    exit 1
+fi
+
+# 2. Define cross-platform port cleanup function
+cleanup_port() {
+    pid=""
+    if command -v lsof >/dev/null 2>&1; then
+        pid=$(lsof -t -i :8080)
+    elif command -v fuser >/dev/null 2>&1; then
+        pid=$(fuser 8080/tcp 2>/dev/null)
+    fi
+    
+    if [ -n "$pid" ]; then
+        kill -9 $pid 2>/dev/null
+        sleep 2
+    fi
+}
+
+# 3. Main Loop
+for i in run-http*; do
+    [ -e "$i" ] || continue
+    base="${i#run-httpd.}"
+    
+    for mode in standard keepalive; do
+        if [ "$mode" = "keepalive" ]; then
+            K_FLAG="-k"
+            mode_lbl="Keep-Alive"
+        else
+            K_FLAG=""
+            mode_lbl="Standard"
+        fi
+        
+        # Ensure port is completely free before starting
+        cleanup_port
+        
+        # Start server in background
+        ./"$i" &
+        SERVER_PID=$!
+        
+        # Health check with timeout
+        TIMEOUT=20
+        while ! $CHECK_CMD >/dev/null 2>&1; do
+            sleep 1.0
+            TIMEOUT=$((TIMEOUT - 1))
+            if [ "$TIMEOUT" -le 0 ]; then
+                echo "Error: Server $i failed to start."
+                kill -9 "$SERVER_PID" 2>/dev/null
+                continue 2
+            fi
+        done
+        
+        sleep 2
+        
+        # Run benchmarks
+        for c in 1 8 64; do
+            ab $K_FLAG -n $N -c $c http://localhost:8080/ 2>/dev/null | \
+                awk -F'[^0-9.]+' '/Requests per second/ {print $2}' > "$TMP_DIR/${base}_${mode}-${c}.out"
+            sleep 0.5
+        done
+        
+        # Clean up background server process
+        kill -9 "$SERVER_PID" 2>/dev/null
+        cleanup_port
+    done
+done
+
+# 4. Generate Sorted Performance Comparison Table
+echo "\n================================================================================"
+echo " BENCHMARK RESULTS SUMMARY (Sorted by 64 Clients descending)"
+echo "================================================================================"
+echo "| Implementation | Mode       | 1 Client      | 8 Clients     | 64 Clients    |"
+echo "|----------------|------------|---------------|---------------|----------------|"
+
+for out_file in "$TMP_DIR"/*-1.out; do
+    [ -e "$out_file" ] || continue
+    
+    runner="${out_file#$TMP_DIR/}"
+    runner="${runner%-1.out}"
+    impl="${runner%_*}"
+    mode="${runner##*_}"
+    
+    # Read raw numbers safely
+    rps_1=$(cat "$TMP_DIR/${runner}-1.out" 2>/dev/null)
+    rps_8=$(cat "$TMP_DIR/${runner}-8.out" 2>/dev/null)
+    rps_64=$(cat "$TMP_DIR/${runner}-64.out" 2>/dev/null)
+    
+    # Substitute blanks with 0 for reliable sorting
+    printf "| %-14s | %-10s | %13.2f | %13.2f | %14.2f |\n" \
+        "$impl" "$mode" "${rps_1:-0}" "${rps_8:-0}" "${rps_64:-0}"
+done | sort -t'|' -k6 -n -r
+
+echo "================================================================================"
+

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec node server.js
+exec node ./server.js

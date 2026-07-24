@@ -1,6 +1,4 @@
 #!/bin/sh
+# Run the server directly without 'exec' so the process ID handles cleanly
+exec ./bin-server_cr
 
-echo "building crystal executable"
-crystal build --release -o server_cr server.cr
-exec ./server_cr
-sleep 3 # crystal http server takes a minute to spin up
