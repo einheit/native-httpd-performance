@@ -47,6 +47,7 @@ for i in run-http*; do
         fi
 
         cleanup_port
+
         ./"$i" &
         SERVER_PID=$!
         echo "Waiting for $i ($mode_lbl) to initialize..."

@@ -1,6 +1,7 @@
 # build outputs
 /bin/
 /logs/
+/old/
 /release/
 /tmp/
 # compiler artifacts
@@ -10,11 +11,12 @@ a.out
 # temporary/generated files
 *.txt
 *.json
-out*
 *.scm.go
 .ccls-cache
 *~
 commit.txt
+out*
 push-to-master
 pull-from-master
-
+results*
+server_*
