@@ -5,9 +5,10 @@ TMP_DIR="tmp"
 [ -d "$TMP_DIR" ] || { echo "no results files - run tests first"; exit 1; }
 
 # ==============================================================================
-# PHASE C: REPORT GENERATION
+# STAGE 3: REPORT GENERATION
 # ==============================================================================
-echo "\n================================================================================"
+echo
+echo "================================================================================"
 echo "BENCHMARK RESULTS SUMMARY (Requests per second, sorted by 64 Clients descending)"
 echo "================================================================================"
 echo "| Implementation | Mode       | 1 Client      | 8 Clients     | 64 Clients     |"
