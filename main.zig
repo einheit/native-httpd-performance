@@ -57,14 +57,15 @@ pub fn main() !void {
         const bytes_received = system.read(@intCast(client_fd), &read_buffer, read_buffer.len);
         if (bytes_received > 0 and bytes_received < @as(usize, @bitCast(@as(isize, -4095)))) {
             // Find and log the first line of the HTTP request (e.g., "GET / HTTP/1.1")
-            var line_iter = std.mem.splitScalar(u8, read_buffer[0..bytes_received], '\n');
-            if (line_iter.next()) |first_line| {
-                std.debug.print("Request Line: {s}\n", .{std.mem.trimEnd(u8, first_line, "\r")});
-            }
+        //    var line_iter = std.mem.splitScalar(u8, read_buffer[0..bytes_received], '\n');
+        //    if (line_iter.next()) |first_line| {
+        //        std.debug.print("Request Line: {s}\n", .{std.mem.trimEnd(u8, first_line, "\r")});
+        //    }
+	    {}
         }
 
         // 6. Structure and write out the literal HTTP raw response
-        const http_body = "Hello from a raw Zig 0.17.0-dev POSIX server!\n";
+        const http_body = "Hello from Zig 0.17.0-dev!\n";
         const http_response = 
             "HTTP/1.1 200 OK\r\n" ++
             "Content-Type: text/plain\r\n" ++
