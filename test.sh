@@ -62,7 +62,7 @@ for i in run-httpd.*; do
             echo "[COMPILE] Crystal -> bin-server_cr"
             crystal build --release -o bin-server_cr server.cr
             ;;
-        bun|js|pl|py|rb)
+        bun|js|pl|py|raku|rb)
             # Scripts skip the build process completely
             echo "[SKIPPED] Interpreted script ($ext) requires no compilation."
             ;;

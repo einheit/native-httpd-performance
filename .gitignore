@@ -4,6 +4,7 @@
 /old/
 /release/
 /tmp/
+bin-server_*
 # compiler artifacts
 *.o
 *.hi
