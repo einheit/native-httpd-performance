@@ -144,7 +144,7 @@ done
 echo "\n================================================================================"
 echo "BENCHMARK RESULTS SUMMARY (Requests per second, sorted by 64 Clients descending)"
 echo "================================================================================"
-echo "| Implementation | Mode       | 1 Client      | 8 Clients     | 64 Clients    |"
+echo "| Implementation | Mode       | 1 Client      | 8 Clients     | 64 Clients     |"
 echo "|----------------|------------|---------------|---------------|----------------|"
 
 for out_file in "$TMP_DIR"/*-1.out; do
