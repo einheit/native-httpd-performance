@@ -1,4 +1,9 @@
-#!/bin/sh -xv
+#!/bin/sh
+
+go=`which ab`
+code=$?
+
+[ $code -ne 0 ] && { echo "apachebench (normally included with apache) must be installed"; exit 1; }
 
 N=8192
 
@@ -39,6 +44,7 @@ for i in run-httpd.*; do
         go) REQ_CMD="go" ;;
         python|py) REQ_CMD="python3" ;;
         rb|ruby) REQ_CMD="ruby" ;;
+        raku|raku) REQ_CMD="raku" ;;
         *) REQ_CMD="" ;;
     esac
 

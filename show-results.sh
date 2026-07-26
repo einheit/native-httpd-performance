@@ -28,8 +28,7 @@ for out_file in "$TMP_DIR"/*-1.out; do
     
     printf "| %-14s | %-10s | %13.2f | %13.2f | %14.2f |\n" \
         "$impl" "$mode" "${rps_1:-0}" "${rps_8:-0}" "${rps_64:-0}"
-done | sort -t'|' -k6 -n -r | perl -p -e s#'0.00'#'N/A '#g
-
+done | sort -t'|' -k6 -n -r | awk '{gsub(/ 0.00 /, "N/A "); print}'
 
 echo "================================================================================"
 
