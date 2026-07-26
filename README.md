@@ -3,9 +3,12 @@ Performance comparison of basic httpd implementations provided by various langua
 
 # running the tests
 
-The test.sh script runs each launch script, which compiles, if neccesary, and runs the server.
+These scripts do the work:
 
-When all the tests are run, the test script displays the sorted performance of the implementations.
+* build.sh - this compiles whetever needs compiling
+* bench.sh - this runs the benchmark tests
+* show-results.sh - this shows the results
+* cleanup.sh - this brings us back to square one
 
 This benchmark is initially focused on latency, which, in addition to the underlying OS, is determined by the characteristics of the language:
 
@@ -27,14 +30,6 @@ And of the httpd server code:
 
 # adding new implementations
 
-New implementations in different languages are welcomed. They just need to adhere to these guidelines:
-
-For each implementation in a given language, there will be two files - a server launch script and the server itself. The test script looks for all server launch scripts of the form "run-httpd.lang", which starts the server in that language.
-
-For instance, the perl launch script is called "run-httpd.pl" and it launches the server, which is called "server.pl"
-
-For compiled languages, the launch script will compile the program and run the resulting executable.
-
-For the example of the go language, the launch script is called "run-httpd.go" and it compiles and launches its server, which is called "server_go"
+New implementations in different languages are welcomed. They just need to be organized in the same way as the existing ones, so that the scripts can detect and run them.
 
 If your chosen language includes an http implementation by default, you can simply use that, or if you prefer, you can implement an http server from lower level building blocks. Of course, many languages do not include an http library, and a lower level approach is the order of the day.
