@@ -2,7 +2,7 @@
 
 TMP_DIR="tmp"
 
-[ -d "$TMP_DIR" ] || { echo "no results files - run tests first"; exit 1; }
+[ -d "$TMP_DIR" ] || { echo "no results files - run benchmark tests first"; exit 1; }
 
 # ==============================================================================
 # STAGE 3: REPORT GENERATION
@@ -28,7 +28,8 @@ for out_file in "$TMP_DIR"/*-1.out; do
     
     printf "| %-14s | %-10s | %13.2f | %13.2f | %14.2f |\n" \
         "$impl" "$mode" "${rps_1:-0}" "${rps_8:-0}" "${rps_64:-0}"
-done | sort -t'|' -k6 -n -r
+done | sort -t'|' -k6 -n -r | perl -p -e s#'0.00'#'N/A '#g
+
 
 echo "================================================================================"
 

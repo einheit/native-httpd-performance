@@ -1,21 +1,12 @@
-#!/bin/sh
+#!/bin/sh -xv
+
 N=8192
+
 TMP_DIR="tmp"
 [ -d "$TMP_DIR" ] || mkdir "$TMP_DIR"
 rm -f "$TMP_DIR"/*
 
 OS=`uname -s`
-
-# Use functions for dynamic command checks to support pipes safely in POSIX sh
-check_port() {
-    if [ "$OS" = 'Linux' ]; then
-        ss -tunlp | grep -q ':8080'
-    elif [ "$OS" = 'FreeBSD' ]; then
-        sockstat -4lL | grep -q ':8080'
-    else
-        return 1
-    fi
-}
 
 cleanup_port() {
     pid=""
@@ -72,26 +63,7 @@ for i in run-httpd.*; do
         ./"$i" &
         SERVER_PID=$!
         
-        TIMEOUT=10
-        SERVER_UP=0
-
-        # Fixed logic: Loop until port opens OR timeout hits
-        while [ "$TIMEOUT" -gt 0 ]; do
-            if check_port; then
-                SERVER_UP=1
-                break
-            fi
-            sleep 0.5
-            TIMEOUT=$((TIMEOUT - 1))
-        done
-
-        if [ "$SERVER_UP" -eq 0 ]; then
-            echo "Error: Server $i failed to bind to port 8080."
-            kill -9 "$SERVER_PID" 2>/dev/null
-            continue
-        fi
-
-        sleep 1.5
+        sleep 3
 
         for c in 1 8 64; do
             ab $K_FLAG -n $N -c $c http://127.0.0.1:8080/ 2>/dev/null | \

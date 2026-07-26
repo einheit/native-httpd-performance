@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 package MyServer;
 use base qw(HTTP::Server::Simple::CGI);
