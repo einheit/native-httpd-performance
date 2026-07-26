@@ -15,7 +15,7 @@ for i in run-httpd.*; do
             echo "[COMPILE] Go -> bin-server_go"
             go build -ldflags="-s -w" -o bin-server_go main.go
             ;;
-        rs)
+        rs|rust)
             echo "[COMPILE] Rust -> bin-server_rs"
             rustc -O -o bin-server_rs main.rs
             ;;
@@ -27,11 +27,11 @@ for i in run-httpd.*; do
             echo "[COMPILE] C -> bin-server_c"
               cc -O3 -o bin-server_c server.c
             ;;
-        cr)
+        cr|crystal)
             echo "[COMPILE] Crystal -> bin-server_cr"
             crystal build --release -o bin-server_cr server.cr
             ;;
-        bun|js|pl|py|raku|rb)
+        bun|js|pl|perl|python|py|raku|ruby|rb)
             # Scripts skip the build process completely
             echo "[SKIPPED] Interpreted script ($ext) requires no compilation."
             ;;
