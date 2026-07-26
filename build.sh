@@ -25,11 +25,7 @@ for i in run-httpd.*; do
             ;;
         c)
             echo "[COMPILE] C -> bin-server_c"
-	    if [ $OS = 'Linux' ]; then
               cc -O3 -o bin-server_c server.c
-	    elif [ $OS = 'FreeBSD' ]; then
-	      cc -o bin-server_c server.c
-	    fi
             ;;
         cr)
             echo "[COMPILE] Crystal -> bin-server_cr"
