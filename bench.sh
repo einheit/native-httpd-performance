@@ -44,6 +44,8 @@ for i in run-httpd.*; do
         bun)          REQ_CMD="bun" ;;
         node|js)      REQ_CMD="node" ;;
         go)           REQ_CMD="go" ;;
+        perl|pl)      REQ_CMD="perl" ;;
+        powershell|ps1) REQ_CMD="pwsh" ;;
         python|py)    REQ_CMD="python3" ;;
         rb|ruby)      REQ_CMD="ruby" ;;
         raku)         REQ_CMD="raku" ;;
@@ -111,36 +113,48 @@ for i in run-httpd.*; do
             # Mathematical Aggregator: Drops the high/low outliers if runs >= 3, then averages
 	                # Mathematical Aggregator: Robust, cross-platform standard averaging
             if [ -f "$raw_runs_file" ]; then
-                awk '
-                    {
-                        # Strip any hidden carriage returns (\r) and add to sum
-                        gsub(/\r/, "", $1)
-                        if ($1 > 0) {
-                            sum += $1
-                            count++
-                        }
-                    }
-                    END {
-                        if (count > 0) {
-                            printf "%.2f\n", sum / count
-                        } else {
-                            print "0.00"
-                        }
-                    }
-                ' "$raw_runs_file" > "$TMP_DIR/${base}_${mode}-${c}.out"
+		awk '
+		{
+		    gsub(/\r/, "", $1)
+		    if ($1 > 0) {
+			arr[count++] = $1
+		    }
+		}
+		END {
+		    if (count >= 3) {
+			# Sort array to drop highest and lowest
+			for (i = 0; i < count; i++) {
+			    for (j = i + 1; j < count; j++) {
+				if (arr[i] > arr[j]) {
+				    tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+                	    }
+            		}
+        	    }
+		    for (i = 1; i < count - 1; i++) {
+			sum += arr[i]
+		    }
+		    printf "%.2f\n", sum / (count - 2)
+		} else if (count > 0) {
+		    for (i = 0; i < count; i++) sum += arr[i]
+			printf "%.2f\n", sum / count
+		} else {
+		    print "0.00"
+		}
+	    }
+            ' "$raw_runs_file" > "$TMP_DIR/${base}_${mode}-${c}.out"
 
-                # Cleanup the raw telemetry run files
-                rm -f "$raw_runs_file"
-            else
-                echo "0.00" > "$TMP_DIR/${base}_${mode}-${c}.out"
-	    fi
-	done
-
-        # Clean kill the server process instance and underlying multi-core workers
-        if kill -0 "$SERVER_PID" >/dev/null 2>&1; then
-            kill -9 "$SERVER_PID" >/dev/null 2>&1
-        fi
-        cleanup_port
+             # Cleanup the raw telemetry run files
+             rm -f "$raw_runs_file"
+	else
+	    echo "0.00" > "$TMP_DIR/${base}_${mode}-${c}.out"
+	fi
     done
+
+    # Clean kill the server process instance and underlying multi-core workers
+    if kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+        kill -9 "$SERVER_PID" >/dev/null 2>&1
+    fi
+    cleanup_port
+  done
 done
 
