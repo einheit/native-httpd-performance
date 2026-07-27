@@ -9,7 +9,7 @@ TMP_DIR="tmp"
 # ==============================================================================
 echo
 echo "================================================================================"
-echo "BENCHMARK RESULTS SUMMARY (Requests per second, sorted by 64 Clients descending)"
+echo "|  BENCHMARK SUMMARY (Requests per second, sorted by max concurrency result)   |"
 echo "================================================================================"
 echo "| Language       | Mode       | 1 Client      | 8 Clients     | 64 Clients     |"
 echo "|----------------|------------|---------------|---------------|----------------|"
