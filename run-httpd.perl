@@ -1,3 +1,1 @@
-#!/bin/sh
-
-exec ./server.pl 2>/dev/null
+plackup -p 8080 app.psgi

@@ -3,6 +3,7 @@
 if [ $# -gt 0 ]; then
   port=$1
 else
+  echo "no port provided, defaulting to 8080"
   port=8080
 fi
 
