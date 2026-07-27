@@ -1,8 +1,0 @@
-
-OS=`uname -s`
-
-if [ $OS = 'Linux' ]; then 
-  ss -tunlp | grep ':8080'
-elif [ $OS = 'FreeBSD' ]; then 
-  sockstat -4lL|grep ':8080'
-fi

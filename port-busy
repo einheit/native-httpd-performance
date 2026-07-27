@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ $# -gt 0 ]; then
+  port=$1
+else
+  port=8080
+fi
+
+OS=`uname -s`
+
+if [ $OS = 'Linux' ]; then 
+  ss -tunlp | grep "\:${port}"
+elif [ $OS = 'FreeBSD' ]; then 
+  sockstat -4lL|grep "\:${port}"
+elif [ $OS = 'OpenBSD' ]; then
+  fstat | grep internet|grep "\:${port}"
+
+fi
+
