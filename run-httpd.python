@@ -1,4 +1,6 @@
 #!/bin/sh
 
-exec python3 ./server.py
-
+# -B: Prevents writing .pyc files
+# -u: Forces unbuffered binary stdout/stderr
+export PYTHONOPTIMIZE=2
+exec python3 -Bu ./server.py
