@@ -1,6 +1,8 @@
 # native-httpd-performance
 Performance comparison of basic httpd implementations provided by various languages
 
+Tested on Linux, FreeBSD and OpenBSD
+
 # running the tests
 
 These scripts do the work:
@@ -33,3 +35,4 @@ And of the httpd server code:
 New implementations in different languages are welcomed. They just need to be organized in the same way as the existing ones, so that the scripts can detect and run them.
 
 If your chosen language includes an http implementation by default, you can simply use that, or if you prefer, you can implement an http server from lower level building blocks. Of course, many languages do not include an http library, and a lower level approach is the order of the day.
+
