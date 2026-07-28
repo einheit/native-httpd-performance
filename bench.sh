@@ -1,5 +1,7 @@
 #!/bin/sh
 
+OS=`uname -s`
+
 # 1. Verify apachebench installation safely
 AB_BIN=$(command -v ab)
 if [ $? -ne 0 ]; then
@@ -16,12 +18,16 @@ rm -f "$TMP_DIR"/*
 
 cleanup_port() {
     pid=""
-    if command -v sockstat >/dev/null 2>&1; then
-        pid=$(sockstat -46l -P tcp -p 8080 | awk 'NR>1 {print $3}' | sort -u)
-    elif command -v lsof >/dev/null 2>&1; then
-        pid=$(lsof -t -i :8080)
-    elif command -v fuser >/dev/null 2>&1; then
-        pid=$(fuser 8080/tcp 2>/dev/null)
+    if [ $OS = "Linux" ] || [ $OS = "FreeBSD" ]; then
+      if command -v sockstat >/dev/null 2>&1; then
+          pid=$(sockstat -46l -P tcp -p 8080 | awk 'NR>1 {print $3}' | sort -u)
+      elif command -v lsof >/dev/null 2>&1; then
+          pid=$(lsof -t -i :8080)
+      elif command -v fuser >/dev/null 2>&1; then
+          pid=$(fuser 8080/tcp 2>/dev/null)
+      fi
+    elif [ $OS = "OpenBSD" ]; then
+       pid=$(fstat | grep :8080 | awk '{print $3}') 
     fi
 
     if [ -n "$pid" ]; then
@@ -42,13 +48,18 @@ for i in run-httpd.*; do
 
     case "$base" in
         bun)          REQ_CMD="bun" ;;
-        node|js)      REQ_CMD="node" ;;
+	c)	      REQ_CMD="cc" ;;
+	crystal)      REQ_CMD="crystal" ;;
         go)           REQ_CMD="go" ;;
-        perl|pl)      REQ_CMD="perl" ;;
+        node|js)      REQ_CMD="node" ;;
+	# perl server depends on plack & Starman
+        perl|pl)      REQ_CMD="plackup >/dev/null 2>&1 && perl -MStarman -e" ;; 
         powershell|ps1) REQ_CMD="pwsh" ;;
         python|py)    REQ_CMD="python3" ;;
-        rb|ruby)      REQ_CMD="ruby" ;;
         raku)         REQ_CMD="raku" ;;
+        rb|ruby)      REQ_CMD="ruby" ;;
+        rust)	      REQ_CMD="rustc" ;;
+        zig)	      REQ_CMD="zig" ;;
         *)            REQ_CMD="" ;;
     esac
 
