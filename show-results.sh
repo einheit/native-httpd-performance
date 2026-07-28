@@ -43,7 +43,7 @@ END {
         printf "| %-14s | %-10s | %13.2f | %13.2f | %14.2f |\n", \
             lang, mode[lang], r1[lang], r8[lang], max_64[lang]
     }
-}' | sort -t'|' -k6 -n -r | awk '{gsub(/ 0.00 /, " N/A "); print}'
+}' | sort -t'|' -k6 -n -r | awk '{gsub(/ 0.00 /, " N/A  "); print}'
 
 echo "================================================================================"
 
