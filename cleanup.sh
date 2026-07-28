@@ -1,2 +1,2 @@
 /bin/rm -rf tmp
-/bin/rm -f bin-server_*
+/bin/rm -f runners/bin-server_*

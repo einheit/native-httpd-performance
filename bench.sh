@@ -1,8 +1,9 @@
 #!/bin/sh
 
 OS=`uname -s`
+rundir="`pwd`/runners"
 
-# 1. Verify apachebench installation safely
+# verify apachebench is installed
 AB_BIN=$(command -v ab)
 if [ $? -ne 0 ]; then
     echo "ERROR: apachebench (ab) must be installed to run benchmarks."
@@ -11,7 +12,8 @@ fi
 
 N=8192
 RUNS_PER_TEST=5 # Number of times to repeat each specific test variation
-TMP_DIR="tmp"
+
+TMP_DIR="`pwd`/tmp"
 
 [ -d "$TMP_DIR" ] || mkdir "$TMP_DIR"
 rm -f "$TMP_DIR"/*
@@ -41,6 +43,7 @@ echo "==========================================================================
 echo " STAGE 2: RUNNING BENCHMARKS (WITH AVERAGING)"
 echo "================================================================================"
 
+cd $rundir
 for i in run-httpd.*; do
     [ -e "$i" ] || continue
     base="${i#run-httpd.}"
@@ -83,7 +86,7 @@ for i in run-httpd.*; do
         echo "Launching $i ($mode_lbl)..."
         
         # Start server background process tree
-        ./"$i" &
+        "${rundir}/${i}" &
         SERVER_PID=$!
         
         # Warmup period for worker pool cluster initialization

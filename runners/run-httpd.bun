@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec bun run ../src/server.bun > /dev/null 2>&1
+
