@@ -1,4 +1,4 @@
-# app.psgi
+# server.pl - used by Starman
 my $app = sub {
     return [
         200,

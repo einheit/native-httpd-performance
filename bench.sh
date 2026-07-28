@@ -56,7 +56,7 @@ for i in run-httpd.*; do
         go)           REQ_CMD="go" ;;
         node|js)      REQ_CMD="node" ;;
 	# perl server depends on plack & Starman
-        perl|pl)      REQ_CMD="plackup >/dev/null 2>&1 && perl -MStarman -e" ;; 
+        perl|pl)      REQ_CMD="plackup"
         powershell|ps1) REQ_CMD="pwsh" ;;
         python|py)    REQ_CMD="python3" ;;
         raku)         REQ_CMD="raku" ;;
