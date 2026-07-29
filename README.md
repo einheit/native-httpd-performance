@@ -12,6 +12,8 @@ These scripts do the work:
 * show-results.sh - this shows the results
 * cleanup.sh - this brings us back to square one
 
+Certain test parameters (# http requests, concurrency levels) can be editied in params.ini
+
 This benchmark is initially focused on latency, which, in addition to the underlying OS, is determined by the characteristics of the language:
 
 * Compiled vs Interpreted - this is the biggest factor
