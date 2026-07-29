@@ -1,49 +1,70 @@
 #!/bin/sh
-TMP_DIR="tmp"
-[ -d "$TMP_DIR" ] || { echo "no results files - run benchmark tests first"; exit 1; }
+
+INI="params.ini"
+
+# Source params.ini to load variables ($TMP_DIR, $LOW_C, $MID_C, $HIGH_C)
+if [ -r "$INI" ]; then
+    . "./$INI"
+else
+    # Fallback to local default if file is missing
+    TMP_DIR="tmp"
+    LOW_C=1
+    MID_C=8
+    HIGH_C=64
+fi
+
+if [ ! -d "$TMP_DIR" ]; then
+    echo "no results files - run benchmark tests first"
+    exit 1
+fi
 
 # ==============================================================================
 # STAGE 3: REPORT GENERATION
 # ==============================================================================
 echo
 echo "================================================================================"
-echo "| BENCHMARK SUMMARY (Requests per second, sorted by max concurrency result)    |"
+echo "|  BENCHMARK SUMMARY (Requests per second, sorted by max concurrency result)   |"
 echo "================================================================================"
-echo "| Language       | Mode       |   1 Client    |   8 Clients   |   64 Clients   |"
+
+# Dynamic Table Header using parameter values
+printf "| %-14s | %-10s | %3d Client(s) | %3d Client(s) | %3d Client(s)  |\n" \
+    "Language" "Mode" "$LOW_C"  "$MID_C"  "$HIGH_C" 
 echo "|----------------|------------|---------------|---------------|----------------|"
 
-# Process all runs and use awk to aggregate and select the highest performer per language
-for out_file in "$TMP_DIR"/*-1.out; do
+# Target the wildcards dynamically using the LOW_C variable
+for out_file in "$TMP_DIR"/*-"$LOW_C".out; do
     [ -e "$out_file" ] || continue
     
-    runner="${out_file#$TMP_DIR/}"
-    runner="${runner%-1.out}"
+    # Strip paths and construct exact filenames dynamically
+    runner="${out_file#"$TMP_DIR"/}"
+    runner="${runner%-"$LOW_C".out}"
     impl="${runner%_*}"
     mode="${runner##*_}"
     
-    rps_1=$(cat "$TMP_DIR/${runner}-1.out" 2>/dev/null)
-    rps_8=$(cat "$TMP_DIR/${runner}-8.out" 2>/dev/null)
-    rps_64=$(cat "$TMP_DIR/${runner}-64.out" 2>/dev/null)
+    # Read out individual metrics safely
+    rps_low=$(cat "$TMP_DIR/${runner}-${LOW_C}.out" 2>/dev/null)
+    rps_mid=$(cat "$TMP_DIR/${runner}-${MID_C}.out" 2>/dev/null)
+    rps_high=$(cat "$TMP_DIR/${runner}-${HIGH_C}.out" 2>/dev/null)
     
-    # Print raw data for awk to process
-    printf "%s\t%s\t%s\t%s\t%s\n" "$impl" "$mode" "${rps_1:-0}" "${rps_8:-0}" "${rps_64:-0}"
+    # Print raw data for awk processing
+    printf "%s\t%s\t%s\t%s\t%s\n" "$impl" "$mode" "${rps_low:-0}" "${rps_mid:-0}" "${rps_high:-0}"
 done | awk -F'\t' '
 {
     lang = $1
-    # Check if this mode (standard or keepalive) has a higher 64-client score
-    if ($5 + 0 > max_64[lang] + 0 || !max_64[lang]) {
-        max_64[lang] = $5
+    # Check if this mode has a higher high-concurrency score
+    if ($5 + 0 > max_high[lang] + 0 || !max_high[lang]) {
+        max_high[lang] = $5
         mode[lang] = $2
-        r1[lang] = $3
-        r8[lang] = $4
+        r_low[lang] = $3
+        r_mid[lang] = $4
     }
 }
 END {
-    for (lang in max_64) {
+    for (lang in max_high) {
         printf "| %-14s | %-10s | %13.2f | %13.2f | %14.2f |\n", \
-            lang, mode[lang], r1[lang], r8[lang], max_64[lang]
+            lang, mode[lang], r_low[lang], r_mid[lang], max_high[lang]
     }
-}' | sort -t'|' -k6 -n -r | awk '{gsub(/ 0.00 /, " N/A  "); print}'
+}' | sort -t'|' -k6 -n -r | awk '{gsub(/ 0.00 /, " N/A "); print}'
 
 echo "================================================================================"
 
