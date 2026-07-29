@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# dependencies - plackup and Starman
-
 perl -MStarman -e 1
 code=$?
 
