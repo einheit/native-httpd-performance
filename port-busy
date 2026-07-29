@@ -15,6 +15,7 @@ elif [ $OS = 'FreeBSD' ]; then
   sockstat -46l -P tcp -p ${port}
 elif [ $OS = 'OpenBSD' ]; then
   fstat | grep internet|grep "\:${port}"
-
+elif [ "$OS" = 'Darwin' ]; then
+  lsof -i :${port} -sTCP:LISTEN
 fi
 
