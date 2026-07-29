@@ -55,8 +55,8 @@ for i in run-httpd.*; do
 	crystal)      REQ_CMD="crystal" ;;
         go)           REQ_CMD="go" ;;
         node|js)      REQ_CMD="node" ;;
-	# perl server depends on plack & Starman
-        perl|pl)      REQ_CMD="plackup"
+	# perl server depends on Starman module
+        perl|pl)      REQ_CMD="starman" ;;
         powershell|ps1) REQ_CMD="pwsh" ;;
         python|py)    REQ_CMD="python3" ;;
         raku)         REQ_CMD="raku" ;;

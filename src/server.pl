@@ -1,4 +1,4 @@
-# server.pl - used by Starman
+# server.pl - used by plack/Starman
 my $app = sub {
     return [
         200,
