@@ -35,10 +35,14 @@ cleanup_port() {
         if command -v lsof >/dev/null 2>&1; then
             pid=$(lsof -t -i :${PORT})
         fi
+
     elif [ "$OS" = "OpenBSD" ]; then
         if command -v fstat >/dev/null 2>&1; then
-            # OpenBSD fstat outputs PID in column 4 ($4)
-            pid=$(fstat | grep ":${PORT}" | awk '{print $4}' | sort -u)
+            # Looks in fields 3 and 4, extracting only numeric PIDs
+            pid=$(fstat | grep ':8080' | awk '{
+                if ($3 ~ /^[0-9]+$/) print $3;
+                else if ($4 ~ /^[0-9]+$/) print $4;
+            }' | sort -u)
         fi
     fi
 
