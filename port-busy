@@ -12,7 +12,7 @@ OS=`uname -s`
 if [ $OS = 'Linux' ]; then 
   ss -tunlp | grep "\:${port}"
 elif [ $OS = 'FreeBSD' ]; then 
-  sockstat -4lL|grep "\:${port}"
+  sockstat -46l -P tcp -p ${port}
 elif [ $OS = 'OpenBSD' ]; then
   fstat | grep internet|grep "\:${port}"
 
