@@ -1,5 +1,5 @@
 #!/bin/sh
 
-exec ./bin-server_rs /dev/null 2>&1
+exec ./bin-server_rs > /dev/null 2>&1
 
 

@@ -1,57 +1,65 @@
-#define _GNU_SOURCE // Required for strcasestr()
+#define _GNU_SOURCE
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <sys/wait.h>
+#include <poll.h>
 #include <signal.h>
 
-#define PORT 8080
+#define DEFAULT_PORT 8080
 #define BUFFER_SIZE 2048
+#define MAX_CONN 200 
+#define TIMEOUT_MS 5000 
 
-// Signal handler to automatically reap zombie child processes
-void sigchld_handler(int s) {
-    (void)s; // Suppress unused variable warning
-    int saved_errno = errno;
-    while (waitpid(-1, NULL, WNOHANG) > 0);
-    errno = saved_errno;
+// Set a socket descriptor to non-blocking mode portably
+int make_socket_non_blocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) return -1;
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-int main() {
-    int server_fd, client_fd;
+int main(int argc, char *argv[]) {
+    int server_fd;
     struct sockaddr_in address;
-    int addrlen = sizeof(address);
-    char buffer[BUFFER_SIZE];
     int opt = 1;
+    int port = DEFAULT_PORT;
 
-    // Prevent early disconnect crashes
-    signal(SIGPIPE, SIG_IGN);
-
-    // Set up SIGCHLD handler to clean up closed connections automatically
-    struct sigaction sa;
-    sa.sa_handler = sigchld_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        perror("sigaction failed");
-        exit(EXIT_FAILURE);
+    // Handle command-line arguments for the port
+    if (argc > 1) {
+        char *endptr;
+        long parsed_port = strtol(argv[1], &endptr, 10);
+        
+        // Validate that the argument is a pure number within the valid port range
+        if (*endptr != '\0' || parsed_port < 1 || parsed_port > 65535) {
+            fprintf(stderr, "Error: Invalid port number '%s'. Must be between 1 and 65535.\n", argv[1]);
+            exit(EXIT_FAILURE);
+        }
+        port = (int)parsed_port;
     }
 
+    // Ignore SIGPIPE portably across both OS families
+    signal(SIGPIPE, SIG_IGN);
+
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("Socket creation failed");
+        perror("Socket failed");
         exit(EXIT_FAILURE);
     }
 
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    
+    if (make_socket_non_blocking(server_fd) < 0) {
+        perror("Fcntl non-blocking failed");
+        exit(EXIT_FAILURE);
+    }
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    address.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed");
@@ -65,77 +73,107 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    // Initialize the pollfd array
+    struct pollfd fds[MAX_CONN];
+    int nfds = 1;
+
+    memset(fds, 0, sizeof(fds));
+    fds[0].fd = server_fd;
+    fds[0].events = POLLIN; 
+
     char *http_response = "HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/plain\r\n"
                           "Content-Length: 13\r\n"
-                          "Connection: keep-alive\r\n"
-                          "\r\n"
+                          "Connection: keep-alive\r\n\r\n"
                           "Hello from C!";
     int response_len = strlen(http_response);
 
+    printf("Server running on port %d...\n", port);
+
     while (1) {
-        client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
-        if (client_fd < 0) {
-            continue;
+        int poll_count = poll(fds, nfds, TIMEOUT_MS);
+
+        if (poll_count < 0) {
+            if (errno == EINTR) continue;
+            perror("Poll error");
+            break;
         }
 
-        // Fork a child process to handle this specific connection
-        pid_t pid = fork();
+        // Check the master listening socket
+        if (fds[0].revents & POLLIN) {
+            while (1) { 
+                struct sockaddr_in client_addr;
+                socklen_t client_len = sizeof(client_addr);
+                int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
 
-        if (pid < 0) {
-            perror("Fork failed");
-            close(client_fd);
-            continue;
-        }
-
-        if (pid == 0) {
-            // --- CHILD PROCESS ---
-            // The child does not need the listener socket
-            close(server_fd);
-
-            // 1. Enable TCP Keep-Alive
-            int keepalive_opt = 1;
-            setsockopt(client_fd, SOL_SOCKET, SO_KEEPALIVE, &keepalive_opt, sizeof(keepalive_opt));
-
-            // 2. Set a 5-second receive timeout for idle clients
-            struct timeval timeout;
-            timeout.tv_sec = 5;
-            timeout.tv_usec = 0;
-            setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-            // 3. Keep-alive request loop
-            while (1) {
-                memset(buffer, 0, BUFFER_SIZE);
-                int bytes_read = read(client_fd, buffer, BUFFER_SIZE - 1);
-                
-                // Connection closed or timeout reached
-                if (bytes_read <= 0) {
-                    break; 
-                }
-
-                write(client_fd, http_response, response_len);
-
-                // If client explicitly requested termination, break immediately
-                if (strcasestr(buffer, "Connection: close") != NULL) {
+                if (client_fd < 0) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        break; 
+                    }
+                    perror("Accept error");
                     break;
                 }
-                
-                // Fallback for standard HTTP/1.0 clients that don't support keep-alive
-                if (strcasestr(buffer, "HTTP/1.1") == NULL && strcasestr(buffer, "Connection: keep-alive") == NULL) {
-                    break;
+
+                if (make_socket_non_blocking(client_fd) < 0) {
+                    close(client_fd);
+                    continue;
+                }
+
+                if (nfds < MAX_CONN) {
+                    fds[nfds].fd = client_fd;
+                    fds[nfds].events = POLLIN;
+                    fds[nfds].revents = 0;
+                    nfds++;
+                } else {
+                    close(client_fd);
                 }
             }
+        }
 
-            close(client_fd);
-            exit(0); // Exit child process cleanly
-        } else {
-            // --- PARENT PROCESS ---
-            // The parent doesn't need this specific client socket descriptor
-            close(client_fd);
+        // Loop through active client sockets
+        for (int i = 1; i < nfds; i++) {
+            if (fds[i].revents & POLLIN) {
+                char buffer[BUFFER_SIZE];
+                memset(buffer, 0, BUFFER_SIZE);
+
+                int bytes_read = read(fds[i].fd, buffer, BUFFER_SIZE - 1);
+
+                if (bytes_read <= 0) {
+                    close(fds[i].fd);
+                    fds[i] = fds[nfds - 1]; 
+                    nfds--;
+                    i--;
+                    continue;
+                }
+
+                write(fds[i].fd, http_response, response_len);
+
+                int close_conn = 0;
+                if (strcasestr(buffer, "Connection: close") != NULL) {
+                    close_conn = 1;
+                } else if (strcasestr(buffer, "HTTP/1.1") == NULL && 
+                           strcasestr(buffer, "Connection: keep-alive") == NULL) {
+                    close_conn = 1;
+                }
+
+                if (close_conn) {
+                    close(fds[i].fd);
+                    fds[i] = fds[nfds - 1];
+                    nfds--;
+                    i--;
+                }
+            } else if (fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                close(fds[i].fd);
+                fds[i] = fds[nfds - 1];
+                nfds--;
+                i--;
+            }
         }
     }
 
-    close(server_fd);
+    for (int i = 0; i < nfds; i++) {
+        if (fds[i].fd >= 0) close(fds[i].fd);
+    }
     return 0;
 }
 
